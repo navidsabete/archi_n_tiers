@@ -3,6 +3,7 @@
  */
 
 import { IOrder, OrderStatus } from '@ligue-sportive/shared';
+import { DeliveryBadge } from './DeliveryBadge';
 
 interface OrderItemProps {
   order: IOrder;
@@ -26,7 +27,10 @@ const OrderItem = ({ order }: OrderItemProps) => (
           {order.createdAt ? new Date(order.createdAt).toLocaleString('fr-FR') : '—'}
         </div>
       </div>
-      <span className={statusBadgeClass(order.status)}>{order.status}</span>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <span className={statusBadgeClass(order.status)}>{order.status}</span>
+        {order.delivery?.status && <DeliveryBadge status={order.delivery.status} />}
+      </div>
     </div>
 
     <div className="order-card-body">
