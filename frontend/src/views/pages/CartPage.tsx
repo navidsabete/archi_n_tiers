@@ -5,12 +5,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartService, CartItem as CartItemType } from '../../models/cart';
-import { OrderModel } from '../../models/order';
 import CartItem from '../components/CartItem';
 
 const CartPage = () => {
   const [cart, setCart] = useState<CartItemType[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { setCart(CartService.getCart()); }, []);
@@ -25,19 +23,9 @@ const CartPage = () => {
     setCart(CartService.getCart());
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) return;
-    try {
-      setLoading(true);
-      await OrderModel.create(cart);
-      CartService.clearCart();
-      setCart([]);
-      navigate('/orders');
-    } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : 'Erreur lors de la commande');
-    } finally {
-      setLoading(false);
-    }
+    navigate('/checkout');
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -77,9 +65,8 @@ const CartPage = () => {
             <button
               className="btn btn-success btn-lg"
               onClick={handleCheckout}
-              disabled={loading}
             >
-              {loading ? 'Traitement...' : 'Commander'}
+              Procéder au paiement
             </button>
           </div>
         </>

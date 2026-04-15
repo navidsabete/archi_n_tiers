@@ -2,6 +2,8 @@
  * Shared Types - Order
  */
 
+import type { IPayment } from './Payment';
+
 export enum OrderStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
@@ -20,5 +22,6 @@ export interface IOrder {
   items: IOrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  payment?: IPayment;
   createdAt?: Date;
 }

@@ -372,13 +372,16 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   padding: 12px 18px;
   border-top: 1px solid var(--border);
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
   font-size: 14px;
   color: var(--text-muted);
+  flex-wrap: wrap;
 }
 .order-total { font-size: 16px; font-weight: 700; color: var(--clr-success); }
+.order-footer-details { display: flex; align-items: center; gap: 8px; }
+.order-payment-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; gap: 2px; }
 
 /* === Admin === */
 .admin-layout { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
@@ -394,3 +397,89 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .text-muted { color: var(--text-muted); }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+
+/* === Checkout === */
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.checkout-provider {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--clr-primary);
+  font-weight: 700;
+}
+
+.fake-card-preview {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #1e40af);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 18px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.fake-card-brand {
+  align-self: flex-end;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.fake-card-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+.fake-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.checkout-inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.checkout-items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkout-items-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.checkout-total-row {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .order-payment-meta {
+    align-items: flex-start;
+  }
+}

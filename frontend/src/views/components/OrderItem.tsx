@@ -42,8 +42,18 @@ const OrderItem = ({ order }: OrderItemProps) => (
     </div>
 
     <div className="order-card-footer">
-      <span className="text-muted">Total articles :</span>
-      <span className="order-total">{order.totalAmount}</span>
+      <div className="order-footer-details">
+        <span className="text-muted">Total articles :</span>
+        <span className="order-total">{order.totalAmount}</span>
+      </div>
+      {order.payment && (
+        <div className="order-payment-meta">
+          <span className="text-muted">Paiement {order.payment.status}</span>
+          <span className="text-muted">
+            VISA ****{order.payment.cardLast4} · {order.payment.transactionRef}
+          </span>
+        </div>
+      )}
     </div>
   </div>
 );

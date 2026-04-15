@@ -3,6 +3,7 @@
  * Handles all API calls to backend
  */
 import { IProduct, IOrderItem, IOrder, IUserResponse, IAuthResponse } from "@ligue-sportive/shared";
+import { ICheckoutPaymentInput } from "@ligue-sportive/shared";
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -38,8 +39,15 @@ export class ApiService {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'API request failed');
+      const payload = await response.json().catch(() => null) as {
+        error?: string | { message?: string };
+        message?: string;
+      } | null;
+      const message =
+        typeof payload?.error === 'string'
+          ? payload.error
+          : payload?.error?.message || payload?.message || 'API request failed';
+      throw new Error(message);
     }
 
     return response.json();
@@ -79,6 +87,11 @@ export class ApiService {
   // Order endpoints
   static async createOrder(items: IOrderItem[]): Promise<IOrder> {
     const data = await ApiService.request<{ data: IOrder }>('POST', '/orders', { items });
+    return data.data;
+  }
+
+  static async checkoutOrder(items: IOrderItem[], payment: ICheckoutPaymentInput): Promise<IOrder> {
+    const data = await ApiService.request<{ data: IOrder }>('POST', '/orders/checkout', { items, payment });
     return data.data;
   }
 

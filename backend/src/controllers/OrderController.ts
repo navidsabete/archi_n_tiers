@@ -1,16 +1,106 @@
 import { Request, Response } from 'express';
 import { IOrderItem, OrderStatus } from '@ligue-sportive/shared';
+import { ICheckoutPaymentInput, PaymentStatus } from '@ligue-sportive/shared';
 import { UserRole } from '@ligue-sportive/shared';
 import { withTransaction } from '../db/transaction';
 import { HttpError } from '../errors/HttpError';
 import { OrderRepository } from '../repositories/OrderRepository';
+import { PaymentRepository } from '../repositories/PaymentRepository';
 import { ProductRepository } from '../repositories/ProductRepository';
 import { toOrderApi } from '../repositories/mappers';
+
+type FakePaymentOutcome =
+  | { approved: true; transactionRef: string; cardLast4: string }
+  | { approved: false; reason: string };
+
+const normalizeCardNumber = (value: string): string => value.replace(/\s+/g, '');
+
+const validateOrderItems = (items: unknown): IOrderItem[] => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new HttpError(400, 'Order items are required');
+  }
+
+  const normalized: IOrderItem[] = [];
+  for (const item of items) {
+    const candidate = item as Partial<IOrderItem>;
+    if (
+      !candidate ||
+      typeof candidate.productId !== 'string' ||
+      !candidate.productId.trim() ||
+      typeof candidate.productName !== 'string' ||
+      !candidate.productName.trim() ||
+      typeof candidate.quantity !== 'number' ||
+      !Number.isInteger(candidate.quantity) ||
+      candidate.quantity <= 0
+    ) {
+      throw new HttpError(400, 'Invalid order item payload');
+    }
+    normalized.push({
+      productId: candidate.productId.trim(),
+      productName: candidate.productName.trim(),
+      quantity: candidate.quantity,
+    });
+  }
+  return normalized;
+};
+
+const validatePaymentInput = (payment: unknown): ICheckoutPaymentInput => {
+  const payload = payment as Partial<ICheckoutPaymentInput> | undefined;
+  if (!payload) throw new HttpError(400, 'Payment payload is required');
+
+  const cardholderName = typeof payload.cardholderName === 'string'
+    ? payload.cardholderName.trim()
+    : '';
+  const cardNumber = typeof payload.cardNumber === 'string'
+    ? normalizeCardNumber(payload.cardNumber)
+    : '';
+  const expiry = typeof payload.expiry === 'string' ? payload.expiry.trim() : '';
+  const cvv = typeof payload.cvv === 'string' ? payload.cvv.trim() : '';
+
+  if (!cardholderName || cardholderName.length < 2) {
+    throw new HttpError(400, 'Cardholder name is invalid');
+  }
+  
+  if (!cardNumber) {
+    throw new HttpError(400, 'Card number is required');
+  }
+  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
+    throw new HttpError(400, 'Expiry must use MM/YY format');
+  }
+  if (!/^\d{3}$/.test(cvv)) {
+    throw new HttpError(400, 'CVV must contain 3 digits');
+  }
+
+  return {
+    cardholderName,
+    cardNumber,
+    expiry,
+    cvv,
+  };
+};
+
+const simulateFakeVisaPayment = (cardNumber: string): FakePaymentOutcome => {
+  const lastDigit = Number(cardNumber[cardNumber.length - 1]);
+  if (Number.isNaN(lastDigit)) {
+    return { approved: false, reason: 'Unable to read card number' };
+  }
+
+  if (lastDigit % 2 !== 0) {
+    return { approved: false, reason: 'Fake payment declined by issuer simulation' };
+  }
+
+  const ref = `FAKE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  return {
+    approved: true,
+    transactionRef: ref,
+    cardLast4: cardNumber.slice(-4),
+  };
+};
 
 export class OrderController {
   static async createOrder(req: Request, res: Response): Promise<void> {
     try {
-      const { items } = req.body;
+      const items = validateOrderItems(req.body?.items);
       const userId = req.user!._id;
 
       let totalAmount = 0;
@@ -20,7 +110,7 @@ export class OrderController {
 
       const order = await OrderRepository.create({
         userId,
-        items: (items as IOrderItem[]).map((item: IOrderItem) => ({
+        items: items.map((item: IOrderItem) => ({
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
@@ -34,6 +124,76 @@ export class OrderController {
         data: toOrderApi(order),
       });
     } catch (error: unknown) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json({ success: false, error: { message: error.message } });
+        return;
+      }
+      res.status(500).json({
+        success: false,
+        error: { message: error instanceof Error ? error.message : 'Internal server error' },
+      });
+    }
+  }
+
+  static async checkoutOrder(req: Request, res: Response): Promise<void> {
+    try {
+      const items = validateOrderItems(req.body?.items);
+      const payment = validatePaymentInput(req.body?.payment);
+      const userId = req.user!._id;
+
+      let totalAmount = 0;
+      for (const item of items) {
+        totalAmount += item.quantity;
+      }
+
+      const paymentResult = simulateFakeVisaPayment(payment.cardNumber);
+      if (!paymentResult.approved) {
+        res.status(402).json({
+          success: false,
+          error: { message: paymentResult.reason },
+        });
+        return;
+      }
+
+      const savedOrder = await withTransaction(async (client) => {
+        const createdOrder = await OrderRepository.create(
+          {
+            userId,
+            items,
+            totalAmount,
+            status: OrderStatus.PENDING,
+          },
+          client
+        );
+
+        await PaymentRepository.create(
+          {
+            orderId: createdOrder.id,
+            amount: totalAmount,
+            provider: 'FAKE_VISA',
+            cardBrand: 'VISA',
+            cardLast4: paymentResult.cardLast4,
+            status: PaymentStatus.APPROVED,
+            transactionRef: paymentResult.transactionRef,
+            paidAt: new Date(),
+          },
+          client
+        );
+
+        const hydrated = await OrderRepository.findById(createdOrder.id, client);
+        if (!hydrated) throw new HttpError(500, 'Checkout failed');
+        return hydrated;
+      });
+
+      res.status(201).json({
+        success: true,
+        data: toOrderApi(savedOrder),
+      });
+    } catch (error: unknown) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json({ success: false, error: { message: error.message } });
+        return;
+      }
       res.status(500).json({
         success: false,
         error: { message: error instanceof Error ? error.message : 'Internal server error' },

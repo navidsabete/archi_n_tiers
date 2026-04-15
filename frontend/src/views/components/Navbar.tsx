@@ -32,7 +32,7 @@ const Navbar = () => {
           Catalogue
         </button>
         <button
-          className={`navbar-link${isActive('/cart') ? ' active' : ''}`}
+          className={`navbar-link${isActive('/cart') || isActive('/checkout') ? ' active' : ''}`}
           onClick={() => navigate('/cart')}
         >
           🛒 Panier
