@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../controllers/AuthController';
 import { ApiService } from '../../models/api';
-import type { IUserResponse, UserRole } from '@ligue-sportive/shared';
+import { IUserResponse, UserRole } from '@ligue-sportive/shared';
 
 interface EditingUser {
   _id: string;
@@ -13,6 +13,13 @@ interface EditingUser {
   lastName: string;
   role: UserRole;
 }
+
+const roleStyles = {
+  ADMIN: "badge-confirmed",
+  CLIENT: "badge-primary",
+  LIVREUR: "badge-neutral",
+  VENDEUR: "badge-pending",
+};
 
 const AdminUsersPage = () => {
   const { isAdmin, isLoading: authLoading } = useAuth();
@@ -127,14 +134,16 @@ const AdminUsersPage = () => {
                       {editingId === user._id ? (
                         <select
                           className="form-control"
-                          value={editingData?.role || 'MEMBER'}
+                          value={editingData?.role || 'CLIENT'}
                           onChange={e => setEditingData({ ...editingData!, role: e.target.value as UserRole })}
                         >
-                          <option value="MEMBER">MEMBER</option>
-                          <option value="ADMIN">ADMIN</option>
+                          {Object.values(UserRole).map( r => (
+                            <option key={r} value={r}>{r}</option>
+                          )
+                          )}
                         </select>
                       ) : (
-                        <span className={`badge ${user.role === 'ADMIN' ? 'badge-confirmed' : 'badge-neutral'}`}>
+                        <span className={`badge ${roleStyles[user.role] || "badge-neutral"}`}>
                           {user.role}
                         </span>
                       )}
