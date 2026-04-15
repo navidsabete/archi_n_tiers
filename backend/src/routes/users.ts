@@ -1,7 +1,3 @@
-/**
- * User Routes (Admin only)
- */
-
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';

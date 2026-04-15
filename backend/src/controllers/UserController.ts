@@ -1,48 +1,30 @@
-/**
- * User Controller  
- * Handles user management (CRUD operations - Admin only)
- */
-
 import { Request, Response } from 'express';
-import { User } from '../models/User';
 import type { IUserResponse } from '@ligue-sportive/shared';
+import { UserRepository } from '../repositories/UserRepository';
+import { toUserResponse } from '../repositories/mappers';
 
 export class UserController {
-  // GET /api/users
   static async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
-      const users = await User.find().select('-password');
-      const userResponses: IUserResponse[] = users.map((user) => ({
-        _id: user._id?.toString() || '',
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      }));
+      const users = await UserRepository.findAll();
+      const userResponses: IUserResponse[] = users.map(toUserResponse);
       res.status(200).json(userResponses);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch users' });
     }
   }
 
-  // GET /api/users/:id
   static async getUserById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const user = await User.findById(id).select('-password');
+      const user = await UserRepository.findById(id);
 
       if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      const userResponse: IUserResponse = {
-        _id: user._id?.toString() || '',
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      };
+      const userResponse: IUserResponse = toUserResponse(user);
 
       res.status(200).json(userResponse);
     } catch (error) {
@@ -50,30 +32,19 @@ export class UserController {
     }
   }
 
-  // PUT /api/users/:id
   static async updateUser(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { firstName, lastName, role } = req.body;
 
-      const user = await User.findByIdAndUpdate(
-        id,
-        { firstName, lastName, role },
-        { new: true }
-      ).select('-password');
+      const user = await UserRepository.updateById(id, { firstName, lastName, role });
 
       if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      const userResponse: IUserResponse = {
-        _id: user._id?.toString() || '',
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      };
+      const userResponse: IUserResponse = toUserResponse(user);
 
       res.status(200).json(userResponse);
     } catch (error) {
@@ -81,13 +52,12 @@ export class UserController {
     }
   }
 
-  // DELETE /api/users/:id
   static async deleteUser(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const user = await User.findByIdAndDelete(id);
+      const deleted = await UserRepository.deleteById(id);
 
-      if (!user) {
+      if (!deleted) {
         res.status(404).json({ error: 'User not found' });
         return;
       }

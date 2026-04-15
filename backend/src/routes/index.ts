@@ -1,7 +1,3 @@
-/**
- * Routes Index
- */
-
 import { Router } from 'express';
 import authRoutes from './auth';
 import productRoutes from './products';

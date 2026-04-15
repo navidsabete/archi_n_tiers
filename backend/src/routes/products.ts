@@ -1,7 +1,3 @@
-/**
- * Product Routes
- */
-
 import { Router } from 'express';
 import { ProductController } from '../controllers/ProductController';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
