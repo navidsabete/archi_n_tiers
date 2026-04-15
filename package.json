@@ -19,7 +19,8 @@
     "install:all": "npm install && npm install --workspaces && npm run build:shared"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
   },
   "description": "Ligue Sportive d'Auvergne - Equipment Rental Platform (Monorepo)",
   "keywords": ["mern", "typescript", "mvc", "monorepo"],

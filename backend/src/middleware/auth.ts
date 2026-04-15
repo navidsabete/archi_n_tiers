@@ -1,13 +1,7 @@
-/**
- * Auth Middleware
- * Verifies JWT token and attaches user to request
- */
-
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@ligue-sportive/shared';
 
-// Extend Express Request to include user
 declare global {
   namespace Express {
     interface Request {

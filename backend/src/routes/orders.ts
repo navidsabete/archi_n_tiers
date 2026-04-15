@@ -1,7 +1,3 @@
-/**
- * Order Routes
- */
-
 import { Router } from 'express';
 import { OrderController } from '../controllers/OrderController';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';

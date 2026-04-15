@@ -1,15 +1,13 @@
-/**
- * Order Controller
- * Handles order management
- */
-
 import { Request, Response } from 'express';
 import { IOrderItem, OrderStatus } from '@ligue-sportive/shared';
-import { Order } from '../models/Order';
-import { Product } from '../models/Product';
+import { UserRole } from '@ligue-sportive/shared';
+import { withTransaction } from '../db/transaction';
+import { HttpError } from '../errors/HttpError';
+import { OrderRepository } from '../repositories/OrderRepository';
+import { ProductRepository } from '../repositories/ProductRepository';
+import { toOrderApi } from '../repositories/mappers';
 
 export class OrderController {
-  // POST /api/orders
   static async createOrder(req: Request, res: Response): Promise<void> {
     try {
       const { items } = req.body;
@@ -20,19 +18,20 @@ export class OrderController {
         totalAmount += item.quantity;
       }
 
-      const order = await Order.create({
+      const order = await OrderRepository.create({
         userId,
-        items: items.map((item: IOrderItem) => ({
+        items: (items as IOrderItem[]).map((item: IOrderItem) => ({
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
         })),
         totalAmount,
+        status: OrderStatus.PENDING,
       });
 
       res.status(201).json({
         success: true,
-        data: order,
+        data: toOrderApi(order),
       });
     } catch (error: unknown) {
       res.status(500).json({
@@ -42,16 +41,16 @@ export class OrderController {
     }
   }
 
-  // GET /api/orders
   static async getUserOrders(req: Request, res: Response): Promise<void> {
     try {
       const { _id: userId, role } = req.user!;
-      const filter = (role === 'ADMIN' && req.query.all === 'true') ? {} : { userId };
-      const orders = await Order.find(filter).sort({ createdAt: -1 });
+      const filter =
+        role === UserRole.ADMIN && req.query.all === 'true' ? {} : { userId };
+      const orders = await OrderRepository.findMany(filter);
 
       res.status(200).json({
         success: true,
-        data: orders,
+        data: orders.map(toOrderApi),
       });
     } catch (error: unknown) {
       res.status(500).json({
@@ -61,10 +60,9 @@ export class OrderController {
     }
   }
 
-  // GET /api/orders/:id
   static async getOrderById(req: Request, res: Response): Promise<void> {
     try {
-      const order = await Order.findById(req.params.id);
+      const order = await OrderRepository.findById(req.params.id);
 
       if (!order) {
         res.status(404).json({
@@ -76,7 +74,7 @@ export class OrderController {
 
       res.status(200).json({
         success: true,
-        data: order,
+        data: toOrderApi(order),
       });
     } catch (error: unknown) {
       res.status(500).json({
@@ -86,7 +84,6 @@ export class OrderController {
     }
   }
 
-  // PATCH /api/orders/:id/status  (admin only)
   static async updateOrderStatus(req: Request, res: Response): Promise<void> {
     try {
       const { status } = req.body as { status: OrderStatus };
@@ -96,48 +93,59 @@ export class OrderController {
         return;
       }
 
-      const order = await Order.findById(req.params.id);
-      if (!order) {
-        res.status(404).json({ success: false, error: { message: 'Order not found' } });
-        return;
-      }
+      const updated = await withTransaction(async (client) => {
+        const order = await OrderRepository.findById(req.params.id, client);
+        if (!order) throw new HttpError(404, 'Order not found');
 
-      const prev = order.status;
-      if (prev === status) {
-        res.status(400).json({ success: false, error: { message: 'Order already has this status' } });
-        return;
-      }
+        const prev = order.status as OrderStatus;
+        if (prev === status) throw new HttpError(400, 'Order already has this status');
 
-      // PENDING → CONFIRMED: check stock then decrement
-      if (status === OrderStatus.CONFIRMED && prev === OrderStatus.PENDING) {
-        for (const item of order.items) {
-          const product = await Product.findById(item.productId);
-          if (!product) {
-            res.status(400).json({ success: false, error: { message: `Product ${item.productName} not found` } });
-            return;
+        const items = (Array.isArray(order.items) ? (order.items as IOrderItem[]) : []) as IOrderItem[];
+
+        if (status === OrderStatus.CONFIRMED && prev === OrderStatus.PENDING) {
+          for (const item of items) {
+            const { rows } = await client.query<{ stock: number }>(
+              `SELECT stock FROM products WHERE id = $1 LIMIT 1`,
+              [item.productId]
+            );
+            if (!rows[0]) throw new HttpError(400, `Product ${item.productName} not found`);
+            if (rows[0].stock < item.quantity) {
+              throw new HttpError(
+                400,
+                `Insufficient stock for ${item.productName} (available: ${rows[0].stock})`
+              );
+            }
           }
-          if (product.stock < item.quantity) {
-            res.status(400).json({ success: false, error: { message: `Insufficient stock for ${item.productName} (available: ${product.stock})` } });
-            return;
+
+          for (const item of items) {
+            const ok = await ProductRepository.decrementStockIfAvailable(
+              item.productId,
+              item.quantity,
+              client
+            );
+            if (!ok) {
+              throw new HttpError(400, `Insufficient stock for ${item.productName}`);
+            }
           }
         }
-        for (const item of order.items) {
-          await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+
+        if (status === OrderStatus.CANCELLED && prev === OrderStatus.CONFIRMED) {
+          for (const item of items) {
+            await ProductRepository.incrementStock(item.productId, item.quantity, client);
+          }
         }
-      }
 
-      // CONFIRMED → CANCELLED: restore stock
-      if (status === OrderStatus.CANCELLED && prev === OrderStatus.CONFIRMED) {
-        for (const item of order.items) {
-          await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } });
-        }
-      }
+        const saved = await OrderRepository.updateStatus(req.params.id, status, client);
+        if (!saved) throw new HttpError(404, 'Order not found');
+        return saved;
+      });
 
-      order.status = status;
-      await order.save();
-
-      res.status(200).json({ success: true, data: order });
+      res.status(200).json({ success: true, data: toOrderApi(updated) });
     } catch (error: unknown) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json({ success: false, error: { message: error.message } });
+        return;
+      }
       res.status(500).json({
         success: false,
         error: { message: error instanceof Error ? error.message : 'Internal server error' },

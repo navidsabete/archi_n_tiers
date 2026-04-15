@@ -1,21 +1,14 @@
-/**
- * Product Controller
- * Handles product management (CRUD operations)
- */
-
 import { Request, Response } from 'express';
-import { Product } from '../models/Product';
+import { ProductRepository } from '../repositories/ProductRepository';
+import { toProductApi } from '../repositories/mappers';
 
 export class ProductController {
-  // GET /api/products
   static async getAllProducts(req: Request, res: Response): Promise<void> {
     try {
-      const filter: Record<string, unknown> = {};
-      if (req.query.category) {
-        filter.category = req.query.category;
-      }
-      const products = await Product.find(filter);
-      res.status(200).json({ success: true, data: products });
+      const category =
+        typeof req.query.category === 'string' ? req.query.category : undefined;
+      const products = await ProductRepository.findAll(category);
+      res.status(200).json({ success: true, data: products.map(toProductApi) });
     } catch (error: unknown) {
       res.status(500).json({
         success: false,
@@ -24,15 +17,14 @@ export class ProductController {
     }
   }
 
-  // GET /api/products/:id
   static async getProductById(req: Request, res: Response): Promise<void> {
     try {
-      const product = await Product.findById(req.params.id);
+      const product = await ProductRepository.findById(req.params.id);
       if (!product) {
         res.status(404).json({ success: false, error: { message: 'Produit non trouvé' } });
         return;
       }
-      res.status(200).json({ success: true, data: product });
+      res.status(200).json({ success: true, data: toProductApi(product) });
     } catch (error: unknown) {
       res.status(500).json({
         success: false,
@@ -41,12 +33,12 @@ export class ProductController {
     }
   }
 
-  // POST /api/products
   static async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      const newProduct = new Product(req.body);
-      const savedProduct = await newProduct.save();
-      res.status(201).json({ success: true, data: savedProduct });
+      const { _id, ...payload } = (req.body ?? {}) as Record<string, unknown>;
+      void _id;
+      const savedProduct = await ProductRepository.create(payload as any);
+      res.status(201).json({ success: true, data: toProductApi(savedProduct) });
     } catch (error: unknown) {
       res.status(500).json({
         success: false,
@@ -55,15 +47,16 @@ export class ProductController {
     }
   }
 
-  // PUT /api/products/:id
   static async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const { _id, ...payload } = (req.body ?? {}) as Record<string, unknown>;
+      void _id;
+      const updatedProduct = await ProductRepository.updateById(req.params.id, payload as any);
       if (!updatedProduct) {
         res.status(404).json({ success: false, error: { message: 'Produit non trouvé' } });
         return;
       }
-      res.status(200).json({ success: true, data: updatedProduct });
+      res.status(200).json({ success: true, data: toProductApi(updatedProduct) });
     } catch (error: unknown) {
       res.status(500).json({
         success: false,
@@ -72,11 +65,10 @@ export class ProductController {
     }
   }
 
-  // DELETE /api/products/:id
   static async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
-      const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-      if (!deletedProduct) {
+      const deleted = await ProductRepository.deleteById(req.params.id);
+      if (!deleted) {
         res.status(404).json({ success: false, error: { message: 'Produit non trouvé' } });
         return;
       }
