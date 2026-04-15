@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { IOrderItem, OrderStatus } from '@ligue-sportive/shared';
 import { ICheckoutPaymentInput, PaymentStatus } from '@ligue-sportive/shared';
+import { DeliveryStatus } from '@ligue-sportive/shared';
 import { UserRole } from '@ligue-sportive/shared';
 import { withTransaction } from '../db/transaction';
 import { HttpError } from '../errors/HttpError';
+import { DeliveryRepository } from '../repositories/DeliveryRepository';
 import { OrderRepository } from '../repositories/OrderRepository';
 import { PaymentRepository } from '../repositories/PaymentRepository';
 import { ProductRepository } from '../repositories/ProductRepository';
@@ -147,13 +149,6 @@ export class OrderController {
       }
 
       const paymentResult = simulateFakeVisaPayment(payment.cardNumber);
-      if (!paymentResult.approved) {
-        res.status(402).json({
-          success: false,
-          error: { message: paymentResult.reason },
-        });
-        return;
-      }
 
       const savedOrder = await withTransaction(async (client) => {
         const createdOrder = await OrderRepository.create(
@@ -166,29 +161,94 @@ export class OrderController {
           client
         );
 
-        await PaymentRepository.create(
-          {
-            orderId: createdOrder.id,
-            amount: totalAmount,
-            provider: 'FAKE_VISA',
-            cardBrand: 'VISA',
-            cardLast4: paymentResult.cardLast4,
-            status: PaymentStatus.APPROVED,
-            transactionRef: paymentResult.transactionRef,
-            paidAt: new Date(),
-          },
-          client
-        );
+        if (paymentResult.approved) {
+          await PaymentRepository.create(
+            {
+              orderId: createdOrder.id,
+              amount: totalAmount,
+              provider: 'FAKE_VISA',
+              cardBrand: 'VISA',
+              cardLast4: paymentResult.cardLast4,
+              status: PaymentStatus.APPROVED,
+              transactionRef: paymentResult.transactionRef,
+              paidAt: new Date(),
+            },
+            client
+          );
+
+          for (const item of items) {
+            const { rows } = await client.query<{ stock: number }>(
+              `SELECT stock FROM products WHERE id = $1 LIMIT 1`,
+              [item.productId]
+            );
+            if (!rows[0]) throw new HttpError(400, `Product ${item.productName} not found`);
+            if (rows[0].stock < item.quantity) {
+              throw new HttpError(
+                400,
+                `Insufficient stock for ${item.productName} (available: ${rows[0].stock})`
+              );
+            }
+          }
+
+          for (const item of items) {
+            const ok = await ProductRepository.decrementStockIfAvailable(
+              item.productId,
+              item.quantity,
+              client
+            );
+            if (!ok) {
+              throw new HttpError(400, `Insufficient stock for ${item.productName}`);
+            }
+          }
+
+          const confirmed = await OrderRepository.updateStatus(
+            createdOrder.id,
+            OrderStatus.CONFIRMED,
+            client
+          );
+          if (!confirmed) throw new HttpError(500, 'Checkout failed');
+
+          await DeliveryRepository.create(
+            {
+              orderId: createdOrder.id,
+              status: DeliveryStatus.IN_PROGRESS,
+              startedAt: new Date(),
+            },
+            client
+          );
+        } else {
+          await PaymentRepository.create(
+            {
+              orderId: createdOrder.id,
+              amount: totalAmount,
+              provider: 'FAKE_VISA',
+              cardBrand: 'VISA',
+              cardLast4: payment.cardNumber.slice(-4),
+              status: PaymentStatus.DECLINED,
+              transactionRef: `DECLINED-${Date.now()}`,
+            },
+            client
+          );
+
+          const cancelled = await OrderRepository.updateStatus(
+            createdOrder.id,
+            OrderStatus.CANCELLED,
+            client
+          );
+          if (!cancelled) throw new HttpError(500, 'Checkout failed');
+        }
 
         const hydrated = await OrderRepository.findById(createdOrder.id, client);
         if (!hydrated) throw new HttpError(500, 'Checkout failed');
         return hydrated;
       });
 
-      res.status(201).json({
-        success: true,
-        data: toOrderApi(savedOrder),
-      });
+      if (!paymentResult.approved) {
+        res.status(402).json({ success: false, error: { message: paymentResult.reason } });
+        return;
+      }
+
+      res.status(201).json({ success: true, data: toOrderApi(savedOrder) });
     } catch (error: unknown) {
       if (error instanceof HttpError) {
         res.status(error.status).json({ success: false, error: { message: error.message } });

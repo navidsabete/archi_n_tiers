@@ -3,6 +3,7 @@
  */
 
 import type { IPayment } from './Payment';
+import type { IDelivery } from './Delivery';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -23,5 +24,6 @@ export interface IOrder {
   totalAmount: number;
   status: OrderStatus;
   payment?: IPayment;
+  delivery?: IDelivery;
   createdAt?: Date;
 }

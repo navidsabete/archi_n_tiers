@@ -4,6 +4,7 @@
  */
 import { IProduct, IOrderItem, IOrder, IUserResponse, IAuthResponse, IStatsResponse } from "@ligue-sportive/shared";
 import { ICheckoutPaymentInput } from "@ligue-sportive/shared";
+import { DeliveryStatus, IDelivery } from "@ligue-sportive/shared";
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -108,6 +109,16 @@ export class ApiService {
 
   static async getOrderById(orderId: string): Promise<IOrder> {
     const data = await ApiService.request<{ data: IOrder }>('GET', `/orders/${orderId}`);
+    return data.data;
+  }
+
+  static async getDeliveryByOrderId(orderId: string): Promise<IDelivery> {
+    const data = await ApiService.request<{ data: IDelivery }>('GET', `/deliveries/${orderId}`);
+    return data.data;
+  }
+
+  static async updateDeliveryStatus(orderId: string, status: DeliveryStatus): Promise<IDelivery> {
+    const data = await ApiService.request<{ data: IDelivery }>('PATCH', `/deliveries/${orderId}/status`, { status });
     return data.data;
   }
 

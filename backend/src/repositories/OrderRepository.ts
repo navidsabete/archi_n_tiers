@@ -49,9 +49,24 @@ SELECT
       'createdAt', p.created_at
     )
   END as payment
+  ,
+  CASE
+    WHEN d.id IS NULL THEN NULL
+    ELSE json_build_object(
+      '_id', d.id,
+      'orderId', d.order_id,
+      'status', d.status,
+      'carrier', d.carrier,
+      'trackingCode', d.tracking_code,
+      'startedAt', d.started_at,
+      'deliveredAt', d.delivered_at,
+      'createdAt', d.created_at
+    )
+  END as delivery
 FROM orders o
 LEFT JOIN order_items oi ON oi.order_id = o.id
 LEFT JOIN payments p ON p.order_id = o.id
+LEFT JOIN deliveries d ON d.order_id = o.id
 `;
 
 export class OrderRepository {
@@ -83,7 +98,7 @@ export class OrderRepository {
       const { rows } = await db.query<OrderRow>(
         `${ORDER_SELECT_SQL}
         WHERE o.id = $1
-        GROUP BY o.id, p.id`,
+        GROUP BY o.id, p.id, d.id`,
         [id]
       );
     return rows[0] ?? null;
@@ -99,7 +114,7 @@ export class OrderRepository {
       const { rows } = await db.query<OrderRow>(
         `${ORDER_SELECT_SQL}
          WHERE o.user_id = $1
-         GROUP BY o.id, p.id
+         GROUP BY o.id, p.id, d.id
          ORDER BY o.created_at DESC`,
         [filter.userId]
       );
@@ -108,7 +123,7 @@ export class OrderRepository {
 
     const { rows } = await db.query<OrderRow>(
       `${ORDER_SELECT_SQL}
-       GROUP BY o.id, p.id
+       GROUP BY o.id, p.id, d.id
        ORDER BY o.created_at DESC`
     );
     return rows;

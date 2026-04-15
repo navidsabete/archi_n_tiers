@@ -6,7 +6,8 @@
 import { useState, useEffect } from 'react';
 import { OrderModel } from '../../models/order';
 import { ApiService } from '../../models/api';
-import { IOrder, OrderStatus } from '@ligue-sportive/shared';
+import { DeliveryStatus, IOrder, OrderStatus } from '@ligue-sportive/shared';
+import { DeliveryBadge } from '../components/DeliveryBadge';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]:   '⏳ En attente',
@@ -33,6 +34,7 @@ const AdminOrdersPage = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [deliveryUpdating, setDeliveryUpdating] = useState<string | null>(null);
 
   useEffect(() => { loadOrders(); }, []);
 
@@ -70,6 +72,16 @@ const AdminOrdersPage = () => {
       }));
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleDeliveryStatusChange = async (orderId: string, status: DeliveryStatus) => {
+    setDeliveryUpdating(orderId);
+    try {
+      const updatedDelivery = await ApiService.updateDeliveryStatus(orderId, status);
+      setOrders(prev => prev.map(o => o._id === orderId ? ({ ...o, delivery: updatedDelivery }) : o));
+    } finally {
+      setDeliveryUpdating(null);
     }
   };
 
@@ -133,6 +145,7 @@ const AdminOrdersPage = () => {
                 <th>Total</th>
                 <th>Date</th>
                 <th>Statut</th>
+                <th>Livraison</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -162,6 +175,24 @@ const AdminOrdersPage = () => {
                   </td>
                   <td>
                     <span className={badgeClass[order.status]}>{order.status}</span>
+                  </td>
+                  <td>
+                    {order.delivery?.status ? (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <DeliveryBadge status={order.delivery.status} />
+                        {order.delivery.status === DeliveryStatus.IN_PROGRESS && (
+                          <button
+                            className="btn btn-sm btn-success"
+                            disabled={deliveryUpdating === order._id}
+                            onClick={() => handleDeliveryStatusChange(order._id!, DeliveryStatus.DELIVERED)}
+                          >
+                            {deliveryUpdating === order._id ? '...' : 'Marquer livrée'}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>—</span>
+                    )}
                   </td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
