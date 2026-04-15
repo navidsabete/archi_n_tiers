@@ -63,6 +63,12 @@ const Navbar = () => {
             >
               👥 Utilisateurs
             </button>
+            <button
+              className={`navbar-link${isActive('/admin/stats') ? ' active' : ''}`}
+              onClick={() => navigate('/admin/stats')}
+            >
+              📊 Statistiques
+            </button>
           </>
         )}
       </div>
