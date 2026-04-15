@@ -26,7 +26,7 @@ export class AuthController {
         password,
         firstName,
         lastName,
-        role: email.endsWith('@admin.com') ? UserRole.ADMIN : UserRole.MEMBER,
+        role: email.endsWith('@admin.com') ? UserRole.ADMIN : UserRole.CLIENT,
       });
 
       const secret = process.env.JWT_SECRET || 'secret';

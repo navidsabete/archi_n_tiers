@@ -3,8 +3,10 @@
  */
 
 export enum UserRole {
-  MEMBER = 'MEMBER',
-  ADMIN = 'ADMIN',
+    CLIENT = "CLIENT",
+    ADMIN = "ADMIN",
+    VENDEUR = "VENDEUR",
+    LIVREUR = "LIVREUR"
 }
 
 export interface IUser {
