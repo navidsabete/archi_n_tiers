@@ -14,6 +14,13 @@ interface EditingUser {
   role: UserRole;
 }
 
+const roleStyles = {
+  ADMIN: "badge-confirmed",
+  CLIENT: "badge-primary",
+  LIVREUR: "badge-neutral",
+  VENDEUR: "badge-pending",
+};
+
 const AdminUsersPage = () => {
   const { isAdmin, isLoading: authLoading } = useAuth();
   const [users, setUsers] = useState<IUserResponse[]>([]);
@@ -136,7 +143,7 @@ const AdminUsersPage = () => {
                           )}
                         </select>
                       ) : (
-                        <span className={`badge ${user.role === 'ADMIN' ? 'badge-confirmed' : 'badge-neutral'}`}>
+                        <span className={`badge ${roleStyles[user.role] || "badge-neutral"}`}>
                           {user.role}
                         </span>
                       )}

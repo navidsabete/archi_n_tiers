@@ -246,6 +246,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .badge-confirmed  { background: var(--clr-success); }
 .badge-cancelled  { background: var(--clr-danger); }
 .badge-neutral    { background: var(--clr-neutral); }
+.badge-primary    { background: var(--clr-primary-hover); }
 
 /* === Table === */
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
