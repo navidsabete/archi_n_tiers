@@ -4,6 +4,7 @@ import LoginPage from './views/pages/LoginPage';
 import RegisterPage from './views/pages/RegisterPage';
 import ProductsPage from './views/pages/ProductsPage';
 import CartPage from './views/pages/CartPage';
+import CheckoutPage from './views/pages/CheckoutPage';
 import OrdersPage from './views/pages/OrdersPage';
 import AdminUsersPage from './views/pages/AdminUsersPage';
 import AdminProductsPage from './views/pages/AdminProductsPage';
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
           <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>} />
           <Route path="/admin/products" element={<ProtectedRoute adminOnly><AdminProductsPage /></ProtectedRoute>} />

@@ -33,9 +33,25 @@ SELECT
       ORDER BY oi.id
     ) FILTER (WHERE oi.id IS NOT NULL),
     '[]'::json
-  ) as items
+  ) as items,
+  CASE
+    WHEN p.id IS NULL THEN NULL
+    ELSE json_build_object(
+      '_id', p.id,
+      'orderId', p.order_id,
+      'amount', p.amount,
+      'provider', p.provider,
+      'cardBrand', p.card_brand,
+      'cardLast4', p.card_last4,
+      'status', p.status,
+      'transactionRef', p.transaction_ref,
+      'paidAt', p.paid_at,
+      'createdAt', p.created_at
+    )
+  END as payment
 FROM orders o
 LEFT JOIN order_items oi ON oi.order_id = o.id
+LEFT JOIN payments p ON p.order_id = o.id
 `;
 
 export class OrderRepository {
@@ -64,12 +80,12 @@ export class OrderRepository {
 
   static async findById(id: string, client?: PoolClient): Promise<OrderRow | null> {
     const db = client ?? getPool();
-    const { rows } = await db.query<OrderRow>(
-      `${ORDER_SELECT_SQL}
-       WHERE o.id = $1
-       GROUP BY o.id`,
-      [id]
-    );
+      const { rows } = await db.query<OrderRow>(
+        `${ORDER_SELECT_SQL}
+        WHERE o.id = $1
+        GROUP BY o.id, p.id`,
+        [id]
+      );
     return rows[0] ?? null;
   }
 
@@ -83,7 +99,7 @@ export class OrderRepository {
       const { rows } = await db.query<OrderRow>(
         `${ORDER_SELECT_SQL}
          WHERE o.user_id = $1
-         GROUP BY o.id
+         GROUP BY o.id, p.id
          ORDER BY o.created_at DESC`,
         [filter.userId]
       );
@@ -92,7 +108,7 @@ export class OrderRepository {
 
     const { rows } = await db.query<OrderRow>(
       `${ORDER_SELECT_SQL}
-       GROUP BY o.id
+       GROUP BY o.id, p.id
        ORDER BY o.created_at DESC`
     );
     return rows;
@@ -129,4 +145,3 @@ export class OrderRepository {
     return rows;
   }
 }
-

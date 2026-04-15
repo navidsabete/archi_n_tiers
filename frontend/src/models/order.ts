@@ -4,11 +4,16 @@
  */
 
 import { IOrder, IOrderItem } from '@ligue-sportive/shared';
+import { ICheckoutPaymentInput } from '@ligue-sportive/shared';
 import { ApiService } from './api';
 
 export class OrderModel {
   static async create(items: IOrderItem[]): Promise<IOrder> {
     return ApiService.createOrder(items);
+  }
+
+  static async checkout(items: IOrderItem[], payment: ICheckoutPaymentInput): Promise<IOrder> {
+    return ApiService.checkoutOrder(items, payment);
   }
 
   static async getAll(all = false): Promise<IOrder[]> {

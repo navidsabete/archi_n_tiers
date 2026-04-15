@@ -1,5 +1,6 @@
 import type { IUserResponse, UserRole } from '@ligue-sportive/shared';
 import type { IOrder, IOrderItem, OrderStatus } from '@ligue-sportive/shared';
+import type { IPayment, PaymentStatus } from '@ligue-sportive/shared';
 
 export type UserRow = {
   id: string;
@@ -26,6 +27,7 @@ export type OrderRow = {
   status: string;
   created_at: Date;
   items: unknown;
+  payment: unknown;
 };
 
 export function toUserResponse(row: UserRow): IUserResponse {
@@ -51,13 +53,21 @@ export function toProductApi(row: ProductRow): Record<string, unknown> {
 
 export function toOrderApi(row: OrderRow): IOrder {
   const items = (Array.isArray(row.items) ? row.items : []) as IOrderItem[];
+  const payment = (row.payment && typeof row.payment === 'object'
+    ? (row.payment as IPayment)
+    : undefined) as IPayment | undefined;
+
+  if (payment?.status) {
+    payment.status = payment.status as PaymentStatus;
+  }
+
   return {
     _id: row.id,
     userId: row.user_id,
     items,
     totalAmount: row.total_amount,
     status: row.status as OrderStatus,
+    payment,
     createdAt: row.created_at,
   };
 }
-
