@@ -23,7 +23,15 @@
     "typescript": "^5.3.3"
   },
   "description": "Ligue Sportive d'Auvergne - Equipment Rental Platform (Monorepo)",
-  "keywords": ["mern", "typescript", "mvc", "monorepo"],
+  "keywords": [
+    "mern",
+    "typescript",
+    "mvc",
+    "monorepo"
+  ],
   "author": "Ligue Sportive d'Auvergne Team",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "recharts": "^3.8.1"
+  }
 }

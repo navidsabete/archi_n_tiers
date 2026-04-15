@@ -2,7 +2,7 @@
  * API Service - HTTP Client
  * Handles all API calls to backend
  */
-import { IProduct, IOrderItem, IOrder, IUserResponse, IAuthResponse } from "@ligue-sportive/shared";
+import { IProduct, IOrderItem, IOrder, IUserResponse, IAuthResponse, IStatsResponse } from "@ligue-sportive/shared";
 import { ICheckoutPaymentInput } from "@ligue-sportive/shared";
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
@@ -136,4 +136,11 @@ export class ApiService {
   static async deleteProduct(id: string): Promise<void> {
     await ApiService.request('DELETE', `/products/${id}`);
   }
+
+  // Stats endpoints
+  static async getStats(): Promise<IStatsResponse> {
+    const data = await ApiService.request<{ data: IStatsResponse }>('GET', '/stats');
+    return data.data;
+  }
+  
 }
