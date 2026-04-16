@@ -14,6 +14,7 @@ type CreateOrderInput = {
   items: OrderItemInput[];
   totalAmount: number;
   status: string;
+  vendor_name: string;
 };
 
 const ORDER_SELECT_SQL = `
@@ -22,6 +23,7 @@ SELECT
   o.user_id,
   o.total_amount,
   o.status,
+  o.vendor_name,
   o.created_at,
   COALESCE(
     json_agg(
@@ -132,14 +134,15 @@ export class OrderRepository {
   static async updateStatus(
     id: string,
     status: string,
+    vendor_name: string,
     client?: PoolClient
   ): Promise<OrderRow | null> {
     const db = client ?? getPool();
     const result = await db.query(
       `UPDATE orders
-       SET status = $2
+       SET status = $2, vendor_name = $3
        WHERE id = $1`,
-      [id, status]
+      [id, status, vendor_name]
     );
     if (result.rowCount === 0) return null;
     return this.findById(id, client);

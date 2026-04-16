@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { DeliveryController } from '../controllers/DeliveryController';
-import { adminMiddleware, authMiddleware } from '../middleware/auth';
+import { authMiddleware, adminVendeurMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/:orderId', authMiddleware, DeliveryController.getDeliveryByOrderId);
-router.patch('/:orderId/status', authMiddleware, adminMiddleware, DeliveryController.updateDeliveryStatus);
+router.patch('/:orderId/status', authMiddleware, adminVendeurMiddleware, DeliveryController.updateDeliveryStatus);
 
 export default router;
 

@@ -102,8 +102,8 @@ export class ApiService {
     return data.data;
   }
 
-  static async updateOrderStatus(orderId: string, status: string): Promise<IOrder> {
-    const data = await ApiService.request<{ data: IOrder }>('PATCH', `/orders/${orderId}/status`, { status });
+  static async updateOrderStatus(orderId: string, status: string, vendor_name: string): Promise<IOrder> {
+    const data = await ApiService.request<{ data: IOrder }>('PATCH', `/orders/${orderId}/status`, { status, vendor_name });
     return data.data;
   }
 
@@ -117,8 +117,8 @@ export class ApiService {
     return data.data;
   }
 
-  static async updateDeliveryStatus(orderId: string, status: DeliveryStatus): Promise<IDelivery> {
-    const data = await ApiService.request<{ data: IDelivery }>('PATCH', `/deliveries/${orderId}/status`, { status });
+  static async updateDeliveryStatus(orderId: string, status: DeliveryStatus, vendor_name: string): Promise<IDelivery> {
+    const data = await ApiService.request<{ data: IDelivery }>('PATCH', `/deliveries/${orderId}/status`, { status, vendor_name });
     return data.data;
   }
 

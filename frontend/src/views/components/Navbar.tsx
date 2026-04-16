@@ -8,7 +8,7 @@ import { useAuth } from '../../controllers/AuthController';
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isVendeur } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -43,7 +43,7 @@ const Navbar = () => {
         >
           📦 Commandes
         </button>
-        {isAdmin() && (
+        {(isAdmin()||isVendeur()) && (
           <>
             <button
               className={`navbar-link${isActive('/admin/orders') ? ' active' : ''}`}
@@ -58,17 +58,21 @@ const Navbar = () => {
               ⚙️ Produits
             </button>
             <button
-              className={`navbar-link${isActive('/admin/users') ? ' active' : ''}`}
-              onClick={() => navigate('/admin/users')}
-            >
-              👥 Utilisateurs
-            </button>
-            <button
               className={`navbar-link${isActive('/admin/stats') ? ' active' : ''}`}
               onClick={() => navigate('/admin/stats')}
             >
               📊 Statistiques
             </button>
+             {(isAdmin()) && (
+              <>
+             <button
+              className={`navbar-link${isActive('/admin/users') ? ' active' : ''}`}
+              onClick={() => navigate('/admin/users')}
+            >
+              👥 Utilisateurs
+            </button>
+            </>
+             )}
           </>
         )}
       </div>

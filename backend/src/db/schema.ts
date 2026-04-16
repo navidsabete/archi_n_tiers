@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS orders (
   user_id TEXT NOT NULL,
   total_amount INTEGER NOT NULL CHECK (total_amount >= 0),
   status TEXT NOT NULL,
+  vendor_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

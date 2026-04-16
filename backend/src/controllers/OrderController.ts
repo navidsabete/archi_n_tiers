@@ -119,6 +119,7 @@ export class OrderController {
         })),
         totalAmount,
         status: OrderStatus.PENDING,
+        vendor_name: ""
       });
 
       res.status(201).json({
@@ -142,6 +143,7 @@ export class OrderController {
       const items = validateOrderItems(req.body?.items);
       const payment = validatePaymentInput(req.body?.payment);
       const userId = req.user!._id;
+      const vendor_name = req.body?.vendor_name
 
       let totalAmount = 0;
       for (const item of items) {
@@ -157,6 +159,7 @@ export class OrderController {
             items,
             totalAmount,
             status: OrderStatus.PENDING,
+            vendor_name
           },
           client
         );
@@ -204,6 +207,7 @@ export class OrderController {
           const confirmed = await OrderRepository.updateStatus(
             createdOrder.id,
             OrderStatus.CONFIRMED,
+            vendor_name,
             client
           );
           if (!confirmed) throw new HttpError(500, 'Checkout failed');
@@ -233,6 +237,7 @@ export class OrderController {
           const cancelled = await OrderRepository.updateStatus(
             createdOrder.id,
             OrderStatus.CANCELLED,
+            vendor_name,
             client
           );
           if (!cancelled) throw new HttpError(500, 'Checkout failed');
@@ -265,7 +270,7 @@ export class OrderController {
     try {
       const { _id: userId, role } = req.user!;
       const filter =
-        role === UserRole.ADMIN && req.query.all === 'true' ? {} : { userId };
+        (role === UserRole.ADMIN || role === UserRole.VENDEUR) && req.query.all === 'true' ? {} : { userId };
       const orders = await OrderRepository.findMany(filter);
 
       res.status(200).json({
@@ -355,7 +360,7 @@ export class OrderController {
           }
         }
 
-        const saved = await OrderRepository.updateStatus(req.params.id, status, client);
+        const saved = await OrderRepository.updateStatus(req.params.id, status, req.body?.vendor_name, client);
         if (!saved) throw new HttpError(404, 'Order not found');
         return saved;
       });
