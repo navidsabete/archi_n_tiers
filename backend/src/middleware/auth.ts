@@ -50,3 +50,16 @@ export const adminMiddleware = (
   }
   next();
 };
+
+
+export const adminVendeurMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user || (req.user.role !== UserRole.VENDEUR &&  req.user.role !== UserRole.ADMIN)) {
+    res.status(403).json({ error: 'Admin or vendeur access required' });
+    return;
+  }
+  next();
+};

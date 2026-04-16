@@ -23,6 +23,7 @@ export interface IOrder {
   items: IOrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  vendor_name?: string;
   payment?: IPayment;
   delivery?: IDelivery;
   createdAt?: Date;

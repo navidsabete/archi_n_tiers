@@ -35,7 +35,9 @@ const AdminOrdersPage = () => {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [deliveryUpdating, setDeliveryUpdating] = useState<string | null>(null);
-
+  const vendor_name = "vendor";
+  
+  
   useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
@@ -56,7 +58,7 @@ const AdminOrdersPage = () => {
     setUpdating(order._id);
     setFeedback(prev => ({ ...prev, [order._id!]: '' }));
     try {
-      const updated = await ApiService.updateOrderStatus(order._id, newStatus);
+      const updated = await ApiService.updateOrderStatus(order._id, newStatus, vendor_name);
       setOrders(prev => prev.map(o => o._id === order._id ? updated : o));
       const msg = newStatus === OrderStatus.CONFIRMED
         ? '✅ Confirmée — stock décrémenté'
@@ -78,7 +80,7 @@ const AdminOrdersPage = () => {
   const handleDeliveryStatusChange = async (orderId: string, status: DeliveryStatus) => {
     setDeliveryUpdating(orderId);
     try {
-      const updatedDelivery = await ApiService.updateDeliveryStatus(orderId, status);
+      const updatedDelivery = await ApiService.updateDeliveryStatus(orderId, status, vendor_name);
       setOrders(prev => prev.map(o => o._id === orderId ? ({ ...o, delivery: updatedDelivery }) : o));
     } finally {
       setDeliveryUpdating(null);
@@ -141,6 +143,7 @@ const AdminOrdersPage = () => {
               <tr>
                 <th>ID</th>
                 <th>Utilisateur</th>
+                <th>Vendeur</th>
                 <th>Articles</th>
                 <th>Total</th>
                 <th>Date</th>
@@ -159,6 +162,11 @@ const AdminOrdersPage = () => {
                   </td>
                   <td>
                     <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{order.userId}</span>
+                  </td>
+                  <td>
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {vendor_name}
+                    </span>
                   </td>
                   <td>
                     <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>

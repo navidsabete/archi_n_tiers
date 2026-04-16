@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
-  const { token, user, isAdmin, isLoading } = useAuth();
+  const { token, user, isAdmin, isVendeur, isLoading } = useAuth();
 
   if (isLoading) {
     return <div className="loading-state">Chargement...</div>;
@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) =>
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && !isAdmin() && !isVendeur()) {
     return <Navigate to="/products" replace />;
   }
 
