@@ -57,7 +57,6 @@ const AdminOrdersPage = () => {
     setUpdating(order._id);
     setFeedback(prev => ({ ...prev, [order._id!]: '' }));
     try {
-      
       const updated = await ApiService.updateOrderStatus(order._id, newStatus, vendor_name);
       setOrders(prev => prev.map(o => o._id === order._id ? updated : o));
       const msg = newStatus === OrderStatus.CONFIRMED
@@ -80,7 +79,6 @@ const AdminOrdersPage = () => {
   const handleDeliveryStatusChange = async (orderId: string, status: DeliveryStatus) => {
     setDeliveryUpdating(orderId);
     try {
-      const vendor_name = `${localStorage.getItem('user')} ${localStorage.getItem('lastName')}`;
       const updatedDelivery = await ApiService.updateDeliveryStatus(orderId, status, vendor_name);
       setOrders(prev => prev.map(o => o._id === orderId ? ({ ...o, delivery: updatedDelivery }) : o));
     } finally {
