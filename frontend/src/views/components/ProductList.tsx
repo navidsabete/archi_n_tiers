@@ -10,6 +10,9 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const ProductList = ({ products, onEdit, onDelete }: Props) => (
   products.length === 0 ? (
     <div className="empty-state">
@@ -21,9 +24,10 @@ const ProductList = ({ products, onEdit, onDelete }: Props) => (
       <thead>
         <tr>
           <th>Nom</th>
-          <th>Catégorie</th>
-          <th>Stock</th>
-          <th>Actions</th>
+            <th>Catégorie</th>
+            <th>Stock</th>
+            <th>Prix</th>
+            <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -32,6 +36,7 @@ const ProductList = ({ products, onEdit, onDelete }: Props) => (
             <td><strong>{p.name}</strong></td>
             <td><span className="badge badge-neutral">{p.category}</span></td>
             <td>{p.stock}</td>
+            <td>{formatCents(p.priceCents)}</td>
             <td>
               <div className="table-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => onEdit(p)}>Modifier</button>

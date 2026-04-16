@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 import { ProductModel, Product, ProductCategory } from '../../models/Product';
 import { CartService } from '../../models/cart';
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [category, setCategory] = useState<string>('');
@@ -32,7 +35,12 @@ const ProductsPage = () => {
 
   const handleAddToCart = (product: Product) => {
     try {
-      CartService.addToCart({ productId: product._id, productName: product.name, quantity: 1 });
+      CartService.addToCart({
+        productId: product._id,
+        productName: product.name,
+        quantity: 1,
+        unitPriceCents: product.priceCents,
+      });
       setAddedId(product._id);
       setTimeout(() => setAddedId(null), 1500);
     } catch (err: unknown) {
@@ -81,6 +89,7 @@ const ProductsPage = () => {
                   {product.description && (
                     <p className="product-card-desc">{product.description}</p>
                   )}
+                  <span className="product-card-price">{formatCents(product.priceCents)}</span>
                   <span className="product-card-stock">
                     Stock : <strong>{product.stock}</strong>
                   </span>

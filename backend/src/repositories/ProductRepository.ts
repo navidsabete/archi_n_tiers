@@ -7,6 +7,7 @@ type CreateProductInput = {
   description?: string;
   category: string;
   stock: number;
+  priceCents: number;
   imageUrl?: string;
 };
 
@@ -15,6 +16,7 @@ export class ProductRepository {
     if (category) {
       const { rows } = await getPool().query<ProductRow>(
         `SELECT id, name, description, category, stock, image_url
+         , price_cents
          FROM products
          WHERE category = $1
          ORDER BY name ASC`,
@@ -24,7 +26,7 @@ export class ProductRepository {
     }
 
     const { rows } = await getPool().query<ProductRow>(
-      `SELECT id, name, description, category, stock, image_url
+      `SELECT id, name, description, category, stock, image_url, price_cents
        FROM products
        ORDER BY name ASC`
     );
@@ -33,7 +35,7 @@ export class ProductRepository {
 
   static async findById(id: string): Promise<ProductRow | null> {
     const { rows } = await getPool().query<ProductRow>(
-      `SELECT id, name, description, category, stock, image_url
+      `SELECT id, name, description, category, stock, image_url, price_cents
        FROM products
        WHERE id = $1
        LIMIT 1`,
@@ -45,10 +47,18 @@ export class ProductRepository {
   static async create(input: CreateProductInput): Promise<ProductRow> {
     const id = newId();
     const { rows } = await getPool().query<ProductRow>(
-      `INSERT INTO products (id, name, description, category, stock, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, description, category, stock, image_url`,
-      [id, input.name, input.description ?? null, input.category, input.stock, input.imageUrl ?? null]
+      `INSERT INTO products (id, name, description, category, stock, price_cents, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, description, category, stock, price_cents, image_url`,
+      [
+        id,
+        input.name,
+        input.description ?? null,
+        input.category,
+        input.stock,
+        input.priceCents,
+        input.imageUrl ?? null,
+      ]
     );
     return rows[0]!;
   }
@@ -79,6 +89,10 @@ export class ProductRepository {
       sets.push(`stock = $${i++}`);
       values.push(input.stock);
     }
+    if (typeof input.priceCents === 'number') {
+      sets.push(`price_cents = $${i++}`);
+      values.push(input.priceCents);
+    }
     if (typeof input.imageUrl === 'string' || input.imageUrl === undefined) {
       if ('imageUrl' in input) {
         sets.push(`image_url = $${i++}`);
@@ -93,7 +107,7 @@ export class ProductRepository {
       `UPDATE products
        SET ${sets.join(', ')}
        WHERE id = $${i}
-       RETURNING id, name, description, category, stock, image_url`,
+       RETURNING id, name, description, category, stock, price_cents, image_url`,
       values
     );
     return rows[0] ?? null;
@@ -126,4 +140,3 @@ export class ProductRepository {
     await client.query(`UPDATE products SET stock = stock + $2 WHERE id = $1`, [productId, quantity]);
   }
 }
-

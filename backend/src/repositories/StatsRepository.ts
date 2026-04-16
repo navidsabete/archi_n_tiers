@@ -1,5 +1,10 @@
 import { getPool } from '../db/pool';
-import type { TopSaleRow, TopCategoryRow, UserRoleStatsRow } from './mappers';
+import type {
+  TopSaleRow,
+  TopCategoryRow,
+  UserRoleStatsRow,
+  PlatformCommissionRow,
+} from './mappers';
 
 
 export class StatsRepository {
@@ -54,6 +59,18 @@ export class StatsRepository {
         );
     
         return rows;
-    }       
+    }
 
-}
+    static async getTotalPlatformCommissionCents(): Promise<number> {
+        const { rows } = await getPool().query<PlatformCommissionRow>(
+          `
+          SELECT COALESCE(SUM((amount * 8) / 100), 0) AS total_platform_commission_cents
+          FROM payments
+          WHERE status = 'APPROVED'
+          `
+        );
+
+        return Number(rows[0]?.total_platform_commission_cents ?? 0);
+    }
+
+} 

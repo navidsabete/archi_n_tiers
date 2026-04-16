@@ -7,6 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import { CartService, CartItem as CartItemType } from '../../models/cart';
 import CartItem from '../components/CartItem';
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const CartPage = () => {
   const [cart, setCart] = useState<CartItemType[]>([]);
   const navigate = useNavigate();
@@ -29,6 +32,7 @@ const CartPage = () => {
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPriceCents = cart.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
 
   return (
     <div className="page">
@@ -61,6 +65,10 @@ const CartPage = () => {
             <div>
               <span className="text-muted">Total articles : </span>
               <span className="cart-summary-total">{totalItems}</span>
+            </div>
+            <div>
+              <span className="text-muted">Total panier : </span>
+              <span className="cart-summary-total">{formatCents(totalPriceCents)}</span>
             </div>
             <button
               className="btn btn-success btn-lg"

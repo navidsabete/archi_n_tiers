@@ -298,6 +298,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .product-card-name     { font-size: 15px; font-weight: 600; }
 .product-card-category { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .product-card-desc     { font-size: 13px; color: var(--text-muted); flex: 1; }
+.product-card-price    { font-size: 16px; font-weight: 700; color: var(--clr-success); }
 .product-card-stock    { font-size: 13px; color: var(--text-muted); }
 
 /* === Cart Item === */

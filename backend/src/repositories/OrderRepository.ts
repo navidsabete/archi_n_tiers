@@ -7,6 +7,8 @@ type OrderItemInput = {
   productId: string;
   productName: string;
   quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
 };
 
 type CreateOrderInput = {
@@ -25,11 +27,13 @@ SELECT
   o.created_at,
   COALESCE(
     json_agg(
-      json_build_object(
-        'productId', oi.product_id,
-        'productName', oi.product_name,
-        'quantity', oi.quantity
-      )
+        json_build_object(
+          'productId', oi.product_id,
+          'productName', oi.product_name,
+          'quantity', oi.quantity,
+          'unitPriceCents', oi.unit_price_cents,
+          'lineTotalCents', oi.line_total_cents
+        )
       ORDER BY oi.id
     ) FILTER (WHERE oi.id IS NOT NULL),
     '[]'::json
@@ -82,9 +86,18 @@ export class OrderRepository {
 
     for (const item of input.items) {
       await db.query(
-        `INSERT INTO order_items (id, order_id, product_id, product_name, quantity)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [newId(), id, item.productId, item.productName, item.quantity]
+        `INSERT INTO order_items (
+           id, order_id, product_id, product_name, quantity, unit_price_cents, line_total_cents
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          newId(),
+          id,
+          item.productId,
+          item.productName,
+          item.quantity,
+          item.unitPriceCents,
+          item.lineTotalCents,
+        ]
       );
     }
 
@@ -151,7 +164,12 @@ export class OrderRepository {
   ): Promise<OrderItemInput[]> {
     const db = client ?? getPool();
     const { rows } = await db.query<OrderItemInput>(
-      `SELECT product_id as "productId", product_name as "productName", quantity
+      `SELECT
+         product_id as "productId",
+         product_name as "productName",
+         quantity,
+         unit_price_cents as "unitPriceCents",
+         line_total_cents as "lineTotalCents"
        FROM order_items
        WHERE order_id = $1
        ORDER BY id`,

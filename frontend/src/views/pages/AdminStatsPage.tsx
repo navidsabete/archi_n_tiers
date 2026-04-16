@@ -6,6 +6,8 @@ import { ApiService } from '../../models/api';
 import { IStatsResponse } from '@ligue-sportive/shared';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
 
 const AdminStatsPage = () => {
  
@@ -80,6 +82,13 @@ const AdminStatsPage = () => {
                 ) : (
                   <span>Aucune donnée</span>
                 )}
+          </div>
+        </div>
+        <div className="card">
+        <div className="card-header">Commission plateforme totale</div>
+          <div className="card-body">
+              <strong>{formatCents(stats.totalPlatformCommissionCents)}</strong>
+              <div className="text-muted">8% des paiements approuvés</div>
           </div>
         </div>
       </div>
