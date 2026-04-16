@@ -37,6 +37,7 @@ const AdminOrdersPage = () => {
   const [deliveryUpdating, setDeliveryUpdating] = useState<string | null>(null);
   const vendor_name = "vendor";
   
+  
   useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
@@ -164,7 +165,7 @@ const AdminOrdersPage = () => {
                   </td>
                   <td>
                     <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {order.vendor_name}
+                      {vendor_name}
                     </span>
                   </td>
                   <td>
