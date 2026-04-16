@@ -27,6 +27,9 @@ const badgeClass: Record<OrderStatus, string> = {
   [OrderStatus.CANCELLED]: 'badge badge-neutral',
 };
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState<IOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,12 +175,18 @@ const AdminOrdersPage = () => {
                     <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
                       {order.items.map((item, i) => (
                         <li key={i} style={{ fontSize: '13px' }}>
-                          {item.productName} <span className="text-muted">× {item.quantity}</span>
+                          {item.productName}{' '}
+                          <span className="text-muted">
+                            × {item.quantity}
+                            {typeof item.unitPriceCents === 'number'
+                              ? ` · ${formatCents(item.unitPriceCents)}`
+                              : ''}
+                          </span>
                         </li>
                       ))}
                     </ul>
                   </td>
-                  <td><strong>{order.totalAmount}</strong></td>
+                  <td><strong>{formatCents(order.totalAmount)}</strong></td>
                   <td style={{ fontSize: '13px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     {order.createdAt ? new Date(order.createdAt).toLocaleString('fr-FR') : '—'}
                   </td>

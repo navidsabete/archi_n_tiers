@@ -4,11 +4,12 @@ import { toTopSaleApi, toTopCategoryApi, toUserRoleStatApi } from '../repositori
 
 export class StatsController {
     static async getStats(req: Request, res: Response): Promise<void> {
-          try {
-            const [topSale, topCategory, userRoles] = await Promise.all([
+      try {
+            const [topSale, topCategory, userRoles, totalPlatformCommissionCents] = await Promise.all([
               StatsRepository.getTopSellingProduct(),
               StatsRepository.getTopCategory(),
               StatsRepository.getUserRoleStats(),
+              StatsRepository.getTotalPlatformCommissionCents(),
             ]);
         
             res.status(200).json({
@@ -17,6 +18,7 @@ export class StatsController {
                 topSale: topSale ? toTopSaleApi(topSale) : null,
                 topCategory: topCategory ? toTopCategoryApi(topCategory) : null,
                 userRoles: userRoles.map(toUserRoleStatApi),
+                totalPlatformCommissionCents,
               },
             });
           } catch (error: unknown) {

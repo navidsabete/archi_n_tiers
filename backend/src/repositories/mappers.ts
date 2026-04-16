@@ -19,6 +19,7 @@ export type ProductRow = {
   description: string | null;
   category: string;
   stock: number;
+  price_cents: number;
   image_url: string | null;
 };
 
@@ -50,6 +51,10 @@ export type UserRoleStatsRow = {
   percentage: number;
 };
 
+export type PlatformCommissionRow = {
+  total_platform_commission_cents: number;
+};
+
 export function toUserResponse(row: UserRow): IUserResponse {
   return {
     _id: row.id,
@@ -67,6 +72,7 @@ export function toProductApi(row: ProductRow): Record<string, unknown> {
     description: row.description ?? undefined,
     category: row.category,
     stock: row.stock,
+    priceCents: Number(row.price_cents),
     imageUrl: row.image_url ?? undefined,
   };
 }

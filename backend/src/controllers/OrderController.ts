@@ -3,6 +3,7 @@ import { IOrderItem, OrderStatus } from '@ligue-sportive/shared';
 import { ICheckoutPaymentInput, PaymentStatus } from '@ligue-sportive/shared';
 import { DeliveryStatus } from '@ligue-sportive/shared';
 import { UserRole } from '@ligue-sportive/shared';
+import { getPool } from '../db/pool';
 import { withTransaction } from '../db/transaction';
 import { HttpError } from '../errors/HttpError';
 import { DeliveryRepository } from '../repositories/DeliveryRepository';
@@ -99,24 +100,57 @@ const simulateFakeVisaPayment = (cardNumber: string): FakePaymentOutcome => {
   };
 };
 
+type PricedOrderItem = IOrderItem & {
+  unitPriceCents: number;
+  lineTotalCents: number;
+};
+
+const buildPricedItems = async (
+  items: IOrderItem[],
+  queryable: {
+    query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }>;
+  }
+): Promise<{ pricedItems: PricedOrderItem[]; totalAmount: number }> => {
+  let totalAmount = 0;
+  const pricedItems: PricedOrderItem[] = [];
+
+  for (const item of items) {
+    const { rows } = await queryable.query<{
+      id: string;
+      name: string;
+      stock: number;
+      price_cents: number;
+    }>(`SELECT id, name, stock, price_cents FROM products WHERE id = $1 LIMIT 1`, [item.productId]);
+
+    const product = rows[0];
+    if (!product) {
+      throw new HttpError(400, `Product ${item.productName} not found`);
+    }
+
+    const lineTotalCents = product.price_cents * item.quantity;
+    totalAmount += lineTotalCents;
+    pricedItems.push({
+      productId: item.productId,
+      productName: product.name,
+      quantity: item.quantity,
+      unitPriceCents: product.price_cents,
+      lineTotalCents,
+    });
+  }
+
+  return { pricedItems, totalAmount };
+};
+
 export class OrderController {
   static async createOrder(req: Request, res: Response): Promise<void> {
     try {
       const items = validateOrderItems(req.body?.items);
       const userId = req.user!._id;
-
-      let totalAmount = 0;
-      for (const item of items) {
-        totalAmount += item.quantity;
-      }
+      const { pricedItems, totalAmount } = await buildPricedItems(items, getPool());
 
       const order = await OrderRepository.create({
         userId,
-        items: items.map((item: IOrderItem) => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-        })),
+        items: pricedItems,
         totalAmount,
         status: OrderStatus.PENDING,
         vendor_name: ""
@@ -145,18 +179,14 @@ export class OrderController {
       const userId = req.user!._id;
       const vendor_name = req.body?.vendor_name
 
-      let totalAmount = 0;
-      for (const item of items) {
-        totalAmount += item.quantity;
-      }
-
       const paymentResult = simulateFakeVisaPayment(payment.cardNumber);
 
       const savedOrder = await withTransaction(async (client) => {
+        const { pricedItems, totalAmount } = await buildPricedItems(items, client);
         const createdOrder = await OrderRepository.create(
           {
             userId,
-            items,
+            items: pricedItems,
             totalAmount,
             status: OrderStatus.PENDING,
             vendor_name
@@ -179,7 +209,7 @@ export class OrderController {
             client
           );
 
-          for (const item of items) {
+          for (const item of pricedItems) {
             const { rows } = await client.query<{ stock: number }>(
               `SELECT stock FROM products WHERE id = $1 LIMIT 1`,
               [item.productId]
@@ -193,7 +223,7 @@ export class OrderController {
             }
           }
 
-          for (const item of items) {
+          for (const item of pricedItems) {
             const ok = await ProductRepository.decrementStockIfAvailable(
               item.productId,
               item.quantity,

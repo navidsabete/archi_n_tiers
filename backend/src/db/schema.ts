@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   category TEXT NOT NULL,
   stock INTEGER NOT NULL CHECK (stock >= 0),
+  price_cents INTEGER NOT NULL DEFAULT 0 CHECK (price_cents >= 0),
   image_url TEXT
 );
 
@@ -60,8 +61,19 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id TEXT NOT NULL,
   product_id TEXT NOT NULL,
   product_name TEXT NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity >= 1)
+  quantity INTEGER NOT NULL CHECK (quantity >= 1),
+  unit_price_cents INTEGER NOT NULL DEFAULT 0 CHECK (unit_price_cents >= 0),
+  line_total_cents INTEGER NOT NULL DEFAULT 0 CHECK (line_total_cents >= 0)
 );
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS price_cents INTEGER NOT NULL DEFAULT 0 CHECK (price_cents >= 0);
+
+ALTER TABLE order_items
+ADD COLUMN IF NOT EXISTS unit_price_cents INTEGER NOT NULL DEFAULT 0 CHECK (unit_price_cents >= 0);
+
+ALTER TABLE order_items
+ADD COLUMN IF NOT EXISTS line_total_cents INTEGER NOT NULL DEFAULT 0 CHECK (line_total_cents >= 0);
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);

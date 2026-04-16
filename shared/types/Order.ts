@@ -15,6 +15,8 @@ export interface IOrderItem {
   productId: string;
   productName: string;
   quantity: number;
+  unitPriceCents?: number;
+  lineTotalCents?: number;
 }
 
 export interface IOrder {

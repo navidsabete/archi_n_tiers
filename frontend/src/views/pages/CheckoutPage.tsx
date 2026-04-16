@@ -18,6 +18,9 @@ const formatExpiry = (value: string): string => {
   return `${clean.slice(0, 2)}/${clean.slice(2)}`;
 };
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -38,6 +41,10 @@ const CheckoutPage = () => {
 
   const totalItems = useMemo(
     () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
+  const totalAmountCents = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0),
     [cart]
   );
 
@@ -190,14 +197,14 @@ const CheckoutPage = () => {
             <ul className="checkout-items-list">
               {cart.map((item) => (
                 <li key={item.productId}>
-                  <span>{item.productName}</span>
-                  <strong>× {item.quantity}</strong>
+                  <span>{item.productName} × {item.quantity}</span>
+                  <strong>{formatCents(item.quantity * item.unitPriceCents)}</strong>
                 </li>
               ))}
             </ul>
             <div className="checkout-total-row">
-              <span>Total articles</span>
-              <strong>{totalItems}</strong>
+              <span>Total à payer</span>
+              <strong>{formatCents(totalAmountCents)}</strong>
             </div>
             <p className="text-muted" style={{ marginTop: '12px', fontSize: '12px' }}>
               Paiement de démonstration: carte Visa factice uniquement.

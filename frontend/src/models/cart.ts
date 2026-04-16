@@ -6,6 +6,7 @@ export interface CartItem {
   productId: string;
   productName: string;
   quantity: number;
+  unitPriceCents: number;
 }
 
 export class CartService {
@@ -14,7 +15,28 @@ export class CartService {
   static getCart(): CartItem[] {
     try {
       const cart = localStorage.getItem(CartService.CART_KEY);
-      return cart ? JSON.parse(cart) : [];
+      if (!cart) return [];
+      const parsed = JSON.parse(cart) as Partial<CartItem>[];
+      return Array.isArray(parsed)
+        ? parsed
+            .filter(
+              (item) =>
+                typeof item?.productId === 'string' &&
+                typeof item?.productName === 'string' &&
+                typeof item?.quantity === 'number' &&
+                Number.isInteger(item.quantity) &&
+                item.quantity > 0
+            )
+            .map((item) => ({
+              productId: item.productId!,
+              productName: item.productName!,
+              quantity: item.quantity!,
+              unitPriceCents:
+                typeof item.unitPriceCents === 'number' && item.unitPriceCents >= 0
+                  ? Math.round(item.unitPriceCents)
+                  : 0,
+            }))
+        : [];
     } catch (error) {
       console.error('Error reading cart from localStorage:', error);
       return [];
@@ -29,9 +51,10 @@ export class CartService {
       if (existingIndex > -1) {
         // Item exists, update quantity
         cart[existingIndex].quantity += item.quantity;
+        cart[existingIndex].unitPriceCents = item.unitPriceCents;
       } else {
         // New item, add to cart
-        cart.push(item);
+        cart.push({ ...item, unitPriceCents: Math.max(0, Math.round(item.unitPriceCents)) });
       }
 
       localStorage.setItem(CartService.CART_KEY, JSON.stringify(cart));
@@ -84,5 +107,10 @@ export class CartService {
   static getCartTotal(): number {
     const cart = CartService.getCart();
     return cart.reduce((total, item) => total + item.quantity, 0);
+  }
+
+  static getCartTotalCents(): number {
+    const cart = CartService.getCart();
+    return cart.reduce((total, item) => total + item.quantity * item.unitPriceCents, 0);
   }
 }

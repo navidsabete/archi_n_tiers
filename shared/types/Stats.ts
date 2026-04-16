@@ -25,4 +25,5 @@ export interface IStatsResponse {
   topSale: ITopSale | null;
   topCategory: ITopCategory | null;
   userRoles: IUserRoleStat[];
+  totalPlatformCommissionCents: number;
 }

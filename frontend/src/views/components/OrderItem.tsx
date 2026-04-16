@@ -9,6 +9,9 @@ interface OrderItemProps {
   order: IOrder;
 }
 
+const formatCents = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100);
+
 const statusBadgeClass = (status: OrderStatus) => {
   switch (status) {
     case OrderStatus.PENDING:   return 'badge badge-pending';
@@ -39,7 +42,15 @@ const OrderItem = ({ order }: OrderItemProps) => (
         {order.items.map((item, i) => (
           <li key={i}>
             <strong>{item.productName}</strong>
-            <span className="text-muted"> × {item.quantity}</span>
+            {typeof item.unitPriceCents === 'number' ? (
+              <span className="text-muted">
+                {' '}
+                × {item.quantity} · {formatCents(item.unitPriceCents)} ={' '}
+                {formatCents(item.lineTotalCents ?? item.unitPriceCents * item.quantity)}
+              </span>
+            ) : (
+              <span className="text-muted"> × {item.quantity}</span>
+            )}
           </li>
         ))}
       </ul>
@@ -47,8 +58,8 @@ const OrderItem = ({ order }: OrderItemProps) => (
 
     <div className="order-card-footer">
       <div className="order-footer-details">
-        <span className="text-muted">Total articles :</span>
-        <span className="order-total">{order.totalAmount}</span>
+        <span className="text-muted">Total commande :</span>
+        <span className="order-total">{formatCents(order.totalAmount)}</span>
       </div>
       {order.payment && (
         <div className="order-payment-meta">

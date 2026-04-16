@@ -17,6 +17,7 @@ const ProductForm = ({ product, onSubmit, onCancel }: Props) => {
     description: '',
     category: ProductCategory.FOOTBALL,
     stock: 0,
+    priceCents: 0,
     imageUrl: '',
   });
 
@@ -25,12 +26,31 @@ const ProductForm = ({ product, onSubmit, onCancel }: Props) => {
       const { _id, ...rest } = product;
       setForm(rest);
     } else {
-      setForm({ name: '', description: '', category: ProductCategory.FOOTBALL, stock: 0, imageUrl: '' });
+      setForm({
+        name: '',
+        description: '',
+        category: ProductCategory.FOOTBALL,
+        stock: 0,
+        priceCents: 0,
+        imageUrl: '',
+      });
     }
   }, [product]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.name === 'stock' ? Number(e.target.value) : e.target.value });
+    if (e.target.name === 'stock') {
+      setForm({ ...form, stock: Number(e.target.value) });
+      return;
+    }
+    if (e.target.name === 'priceEuros') {
+      const parsed = Number(e.target.value);
+      setForm({
+        ...form,
+        priceCents: Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 100)) : 0,
+      });
+      return;
+    }
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,6 +86,20 @@ const ProductForm = ({ product, onSubmit, onCancel }: Props) => {
       <div className="form-group">
         <label className="form-label">Stock</label>
         <input className="form-control" type="number" name="stock" value={form.stock} onChange={handleChange} required min={0} />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Prix (€)</label>
+        <input
+          className="form-control"
+          type="number"
+          name="priceEuros"
+          step="0.01"
+          min={0}
+          value={(form.priceCents / 100).toFixed(2)}
+          onChange={handleChange}
+          required
+        />
       </div>
 
       <div className="form-group">
