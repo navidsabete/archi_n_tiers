@@ -13,6 +13,8 @@ export class StatsRepository {
           SUM(oi.quantity) AS total_sold
         FROM order_items oi
         JOIN products p ON p.id = oi.product_id
+        JOIN orders o ON o.id = oi.order_id
+		    WHERE (o.status != 'PENDING' AND o.status != 'CANCELLED')
         GROUP BY p.id, p.name
         ORDER BY total_sold DESC
         LIMIT 1
