@@ -40,8 +40,8 @@ Visit: http://localhost:3000
 ```
 
 ## Stack
-
-- **Backend**: Express + PostgreSQL + JWT
+- **Database** : PostgreSQL in a container (Docker)
+- **Backend**: Express + Data Access Layer + JWT
 - **Frontend**: React + native fetch (no Axios/Zustand/Zod)
 - **Shared**: TypeScript types only
 - **No tests**: 1-day scope
